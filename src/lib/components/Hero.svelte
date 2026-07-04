@@ -25,6 +25,7 @@
     'Hola', 'Bonjour', 'Hallo', 'Ciao', '안녕하세요',
     'Namaste', 'Olá', 'Merhaba', 'Hej', 'Sawubona',
   ];
+  const GREETING_SEEN_KEY = 'dmm:greeting-seen:tab:v1';
   let greetingIndex = $state(0);
 
   // ── WAAPI helpers ─────────────────────────────────────────────
@@ -66,7 +67,35 @@
     const onMqChange = (e: MediaQueryListEvent) => { isDesktop = e.matches; };
     mq.addEventListener('change', onMqChange);
 
-    if (!helloEl) return;
+    let hasSeenGreeting = false;
+    try {
+      hasSeenGreeting = sessionStorage.getItem(GREETING_SEEN_KEY) === '1';
+    } catch {
+      // Storage can be unavailable in some privacy modes.
+    }
+
+    if (hasSeenGreeting) {
+      phase = 'hero';
+      setNavReady();
+      return () => {
+        mq.removeEventListener('change', onMqChange);
+      };
+    }
+
+    try {
+      // Mark as seen immediately so a refresh won't replay the intro.
+      sessionStorage.setItem(GREETING_SEEN_KEY, '1');
+    } catch {
+      // Ignore storage write failures.
+    }
+
+    if (!helloEl) {
+      phase = 'hero';
+      setNavReady();
+      return () => {
+        mq.removeEventListener('change', onMqChange);
+      };
+    }
 
     const timers: ReturnType<typeof setTimeout>[] = [];
 

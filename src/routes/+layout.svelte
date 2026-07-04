@@ -15,10 +15,11 @@
 
   onMount(() => {
     const lenis = new Lenis({
-      duration: 1.4,
+      duration: 1.1,
       easing: (t) => 1 - Math.pow(1 - t, 4),
       orientation: 'vertical',
       smoothWheel: true,
+      wheelMultiplier: 1.3,
     });
 
     // hook lenis into GSAP ScrollTrigger

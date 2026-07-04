@@ -1,17 +1,18 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
-  // ── principles ──────────────────────────────────────────────────
-  const principles: string[] = [
-    'solder before you ship',
-    'simplicity survives the rewrite',
-    'test on real hardware, not assumptions',
-    'privacy is a default, not a feature',
-    'consistency across every platform',
+  // ── philosophy ───────────────────────────────────────────────────
+  // 2 placeholder photo slots — swap `src` for the soldering / coding
+  // photos once they're added to the project's static assets.
+  const heroPhotos: { id: string; src: string; fallback: string }[] = [
+    { id: 'code',   src: '/coding.png',    fallback: '#A89C8C' },
+    { id: 'solder', src: '/soldering.png', fallback: '#C8C3BB' },
   ];
 
-  let listEl: HTMLElement | null = $state(null);
-  let rowEls: HTMLElement[] = [];
+  let heroSectionEl: HTMLElement | null = $state(null);
+  let heroHeadlineEl: HTMLElement | null = $state(null);
+  let heroSubEl: HTMLElement | null = $state(null);
+  let heroPhotoEls: HTMLElement[] = [];
 
   function fadeUp(el: HTMLElement, delay: number) {
     el.animate(
@@ -23,74 +24,66 @@
     );
   }
 
+  // reuses the same fadeUp()/IntersectionObserver pattern used elsewhere,
+  // aimed at the hero's own elements.
   onMount(() => {
+    const heroEls = [heroHeadlineEl, heroSubEl, ...heroPhotoEls].filter(
+      (el): el is HTMLElement => el !== null
+    );
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (!entry.isIntersecting) return;
-        rowEls.forEach((el, i) => fadeUp(el, i * 90));
+        heroEls.forEach((el, i) => fadeUp(el, i * 90));
         observer.disconnect();
       },
       { threshold: 0.2 }
     );
-    if (listEl) observer.observe(listEl);
+    if (heroSectionEl) observer.observe(heroSectionEl);
     return () => observer.disconnect();
   });
 
-  // ── thought ─────────────────────────────────────────────────────
-  type Segment = { text: string; hl: 'a' | 'b' | null };
-  type Item = { id: string; title: string; segments: Segment[] };
-
-  function parseSegments(text: string): Segment[] {
-    const segments: Segment[] = [];
-    const regex = /<hl-(a|b)>(.*?)<\/hl-\1>/g;
-    let lastIndex = 0;
-    let match: RegExpExecArray | null;
-
-    while ((match = regex.exec(text)) !== null) {
-      if (match.index > lastIndex) {
-        segments.push({ text: text.slice(lastIndex, match.index), hl: null });
-      }
-      segments.push({ text: match[2], hl: match[1] as 'a' | 'b' });
-      lastIndex = match.index + match[0].length;
-    }
-    if (lastIndex < text.length) {
-      segments.push({ text: text.slice(lastIndex), hl: null });
-    }
-    return segments;
-  }
-
-  const rawItems: { id: string; title: string; description: string }[] = [
-    {
-      id: 'aesthetics',
-      title: 'aesthetics',
-      description:
-        'a clean <hl-a>interface</hl-a> hides a thousand small decisions. simplicity is not the <hl-b>absence</hl-b> of complexity — it is complexity <hl-a>resolved</hl-a>.',
-    },
-    {
-      id: 'entropy',
-      title: 'entropy',
-      description:
-        'hardware taught me this first: nothing stays <hl-b>calibrated</hl-b> on its own. solder joints fatigue, systems drift — <hl-a>entropy</hl-a> always wins unless you show up.',
-    },
-    {
-      id: 'rationality',
-      title: 'rationality',
-      description:
-        'every board, every framework, every stack is a <hl-a>tradeoff</hl-a>. choosing one means saying <hl-b>no</hl-b> to the others — that is how you actually ship.',
-    },
+  // ── what i can do ───────────────────────────────────────────────
+  const capabilities: { id: string; label: string; src: string; fallback: string }[] = [
+    { id: 'hardware',  label: 'Hardware Prototyping',   src: '/thumbnail_healthsense.png', fallback: '#C8C3BB' },
+    { id: 'firmware',  label: 'Embedded Firmware',      src: '/thumbnail_svelteskill.png', fallback: '#B8A99A' },
+    { id: 'frontend',  label: 'Frontend Engineering',   src: '/thumbnail_macroloop.png',   fallback: '#A89C8C' },
+    { id: 'fullstack', label: 'Full-Stack Web Apps',    src: '/thumbnail_archive.png',     fallback: '#D4C4B0' },
+    { id: 'systems',   label: 'Systems Architecture',   src: '/thumbnail_sabong.png',      fallback: '#9C9388' },
   ];
 
-  const items: Item[] = rawItems.map((it) => ({
-    id: it.id,
-    title: it.title,
-    segments: parseSegments(it.description),
-  }));
+  let activeCap: number = $state(0);
 
-  let openIndex: number = $state(0);
+  let capListWrap: HTMLElement | null = $state(null);
+  let capRowEls: HTMLElement[] = [];
+  let imageY: number = $state(0);
+  const CAP_IMAGE_HEIGHT = 420;
 
-  function toggleOpen(i: number) {
-    openIndex = openIndex === i ? -1 : i;
+  function setActiveCap(i: number) {
+    activeCap = i;
+    positionCapImage();
   }
+
+  function positionCapImage() {
+    const row = capRowEls[activeCap];
+    const wrap = capListWrap;
+    if (!row || !wrap) return;
+    const rowRect = row.getBoundingClientRect();
+    const wrapRect = wrap.getBoundingClientRect();
+    const raw = rowRect.top - wrapRect.top + rowRect.height / 2 - CAP_IMAGE_HEIGHT / 2;
+    // dampen the travel distance so the window doesn't swing all the way
+    // to the top/bottom rows — it eases toward each row without fully
+    // committing to its exact vertical position.
+    const MOVEMENT_DAMPING = 0.8;
+    const centerRest = wrapRect.height / 2 - CAP_IMAGE_HEIGHT / 2;
+    imageY = centerRest + (raw - centerRest) * MOVEMENT_DAMPING;
+  }
+
+  onMount(() => {
+    positionCapImage();
+    const handleResize = () => positionCapImage();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  });
 </script>
 
 <div class="relative bg-[#F3EFE9]">
@@ -121,124 +114,132 @@
   <!-- translucent cream veil — keeps the blobs from fighting with text contrast -->
   <div class="pointer-events-none absolute inset-0 bg-[#F3EFE9]/72" aria-hidden="true"></div>
 
-  <!-- ═══════════════════════ PRINCIPLES ═══════════════════════ -->
+  <!-- ═══════════════════════════ PHILOSOPHY ═══════════════════════════ -->
   <section
-    class="relative z-10 flex min-h-[60vh] w-full items-center justify-center
-           px-6 py-[clamp(3rem,8vw,6rem)] pt-[calc(clamp(3rem,8vw,6rem)+20px)]"
-    aria-labelledby="principles-heading"
+    bind:this={heroSectionEl}
+    class="relative z-10 w-full pt-[clamp(3.5rem,7vw,6rem)] pb-[clamp(6rem,14vw,10rem)]"
+    aria-label="philosophy"
   >
-    <div
-      class="grid w-fit grid-cols-1 gap-y-5 sm:grid-cols-[150px_1fr] sm:gap-x-9 sm:gap-y-0"
-    >
-      <p
-        id="principles-heading"
-        class="font-ui m-0 whitespace-nowrap text-[0.8125rem] tracking-[0.01em] text-[#A8A8A3]"
-      >
-        [principles]
-      </p>
-
-      <div bind:this={listEl} class="flex flex-col gap-[1.1rem]">
-        {#each principles as line, i (line)}
-          <p
-            bind:this={rowEls[i]}
-            class="font-ui m-0 whitespace-normal text-[clamp(0.9375rem,1.3vw,1.0625rem)]
-                   font-normal leading-[1.4] text-[#2B2B29] sm:whitespace-nowrap"
-            style="opacity: 0;"
-          >{line}</p>
+    <div class="relative w-full px-6 sm:px-10 lg:px-16">
+      <!-- the two photos, equal-sized blocks stacked on mobile and side-by-side from sm up -->
+      <div class="grid w-full grid-cols-1 overflow-hidden sm:grid-cols-2">
+        {#each heroPhotos as photo, i (photo.id)}
+          <div
+            bind:this={heroPhotoEls[i]}
+            class="relative aspect-square w-full overflow-hidden"
+            style="opacity: 0; background-color: {photo.fallback};"
+          >
+            <img
+              src={photo.src}
+              alt=""
+              loading="lazy"
+              class="h-full w-full object-cover"
+              onerror={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0'; }}
+            />
+          </div>
         {/each}
+      </div>
+
+      <!-- headline lockup — centered over the seam, frosted so it reads
+           against either photo, edges feathered rather than boxed -->
+      <div class="pointer-events-none absolute inset-0 flex items-center justify-center px-6">
+        <div class="philosophy-overlay pointer-events-auto max-w-xl px-8 py-10 text-center sm:max-w-2xl sm:px-14 sm:py-14">
+          <h1
+            bind:this={heroHeadlineEl}
+            class="font-ui m-0 text-[clamp(2.1rem,5.6vw,3.6rem)] font-semibold leading-[1.12] tracking-tight text-[#1A1A18]"
+            style="opacity: 0;"
+          >
+            I design the software, then<br />
+            solder the <em class="hero-accent">hardware</em> underneath.
+          </h1>
+
+          <p
+            bind:this={heroSubEl}
+            class="font-ui mx-auto mt-6 max-w-md text-[clamp(1.22rem,1.82vw,1.46rem)] leading-[1.6] text-[#3A3A37]"
+            style="opacity: 0;"
+          >
+            A systems engineer who ships firmware and frontend from the same bench —
+            the boundary between the two is mostly imaginary.
+          </p>
+        </div>
       </div>
     </div>
   </section>
 
-  <!-- ═══════════════════════ THOUGHT ═══════════════════════════ -->
+  <!-- ═══════════════════════ WHAT I CAN DO ═══════════════════════ -->
   <section
-    class="relative z-10 flex w-full justify-center px-6 py-[clamp(2.5rem,7vw,5rem)]
-           pt-[calc(clamp(2.5rem,7vw,5rem)+50px)]"
-    aria-labelledby="thought-heading"
+    class="relative z-10 w-full pt-[clamp(6rem,14vw,10rem)] pb-[clamp(5.5rem,13vw,9.5rem)]"
+    aria-labelledby="capabilities-heading"
   >
-    <div class="w-full max-w-155">
+    <div class="flex w-full items-start gap-6 sm:gap-10">
 
-      <p id="thought-heading" class="font-ui mb-6 text-[0.8125rem] text-[#A8A8A3]">
-        [thought]
+      <!-- label — pinned to the far left edge, own column -->
+      <p
+        id="capabilities-heading"
+        class="font-ui sticky top-8 m-0 shrink-0 whitespace-nowrap pl-6 text-[0.84rem]
+               uppercase tracking-[0.08em] text-[#6E6D67] sm:pl-10"
+      >
+        [what i can do]
       </p>
 
-      <p class="font-ui mb-8 max-w-lg text-[clamp(0.9375rem,1.3vw,1.0625rem)] leading-[1.55] text-[#3A3A37]">
-        an interface is born not from pixels, but from decisions. i let go of the
-        needless and leave only meaning behind.
-      </p>
+      <!-- capability list + image — shifted left of center, image sits with a gap from the right edge -->
+      <div class="relative w-full pb-8 sm:pb-12" bind:this={capListWrap}>
 
-      <ul class="border-t border-black/10">
-        {#each items as item, i (item.id)}
-          <li>
+        <!-- capability list -->
+        <div class="flex flex-col pl-[6vw] pr-6 sm:pr-120 sm:pl-[18vw]">
+          {#each capabilities as cap, i (cap.id)}
             <button
+              bind:this={capRowEls[i]}
               type="button"
-              class="group -mx-3 w-full rounded-md border-b border-black/10 px-3 py-[0.85rem]
-                     text-left ring-1 ring-transparent outline-none
-                     transition-[transform,box-shadow] duration-150
-                     {openIndex === i
-                       ? 'ring-[#B8763F]/70'
-                       : 'hover:translate-x-1 focus-visible:translate-x-1 focus-visible:ring-[#B8763F]/70'}"
-              aria-expanded={openIndex === i}
-              onclick={() => toggleOpen(i)}
+              class="group relative w-full py-5 text-left
+                     {i === 0 ? 'pt-0' : ''}
+                     outline-none focus-visible:text-[#1A1A18]"
+              onmouseenter={() => setActiveCap(i)}
+              onfocus={() => setActiveCap(i)}
             >
-              <span class="flex items-baseline gap-[0.9rem]">
-                <span
-                  class="font-ui min-w-[1.1rem] text-[0.6875rem] text-[#B0AFA9]"
-                >{String(i + 1).padStart(2, '0')}</span>
-
-                <span class="relative inline-block">
-                  <span
-                    class="font-ui text-[clamp(0.9375rem,1.3vw,1.0625rem)] font-medium
-                           transition-colors duration-150
-                           {openIndex === i
-                             ? 'text-[#1A1A18]'
-                             : 'text-[#C6C4BD] group-hover:text-[#8E8C85] group-focus-visible:text-[#8E8C85]'}"
-                  >{item.title}</span>
-                  <span
-                    class="absolute -bottom-1 left-0 h-px bg-[#B8763F] transition-all duration-300
-                           {openIndex === i ? 'w-full' : 'w-0 group-hover:w-full'}"
-                  ></span>
-                </span>
-              </span>
-
-              <!-- always rendered, height animated via grid-template-rows so
-                   opening/closing eases the layout shift instead of snapping
-                   the rest of the page into a new position instantly -->
               <span
-                class="grid transition-[grid-template-rows] duration-300 ease-out"
-                style="grid-template-rows: {openIndex === i ? '1fr' : '0fr'};"
+                class="font-ui block text-[clamp(2.2rem,6.4vw,3.7rem)] font-bold leading-[1.08]
+                       tracking-tight transition-colors duration-300
+                       {activeCap === i ? 'text-[#1A1A18]' : 'text-[#8C8A82]'}"
               >
-                <span class="overflow-hidden">
-                  <span class="font-ui mb-[0.15rem] ml-8 mt-[0.55rem] block max-w-120 text-[0.8125rem] leading-[1.55] text-[#4A4A46]">
-                    {#each item.segments as seg, si (si)}
-                      {#if seg.hl === 'a'}
-                        <span class="text-[#B8763F]">{seg.text}</span>
-                      {:else if seg.hl === 'b'}
-                        <span class="text-[#5A72A0]">{seg.text}</span>
-                      {:else}
-                        {seg.text}
-                      {/if}
-                    {/each}
-                  </span>
-                </span>
+                {cap.label}
               </span>
             </button>
-          </li>
-        {/each}
-      </ul>
+          {/each}
+        </div>
 
-      <div class="mt-7 flex justify-end">
-        <a
-          href="/thoughts"
-          class="font-ui inline-flex items-center gap-2 rounded-lg bg-[#EDEDEA]
-                 px-[0.9rem] py-2 text-[0.8125rem] text-[#1A1A18] no-underline
-                 transition-colors duration-150 hover:bg-[#E2E2DE]"
+        <!-- floating preview — the window itself tracks the vertical
+             position of the hovered row (so it moves to where you hover),
+             while everything inside it is a single fixed-order column of
+             images that slides internally to the right frame — a real
+             filmstrip scroll, never a cross-fade/blur between images. -->
+        <div
+             class="pointer-events-none absolute right-6 hidden w-105 overflow-hidden
+                 transition-transform duration-500 ease-out sm:block"
+          style="height: {CAP_IMAGE_HEIGHT}px; top: 0; transform: translateY({imageY}px);"
         >
-          <span class="h-1.5 w-1.5 rounded-full bg-[#B8763F]"></span>
-          read how i think
-        </a>
-      </div>
+          <div
+            class="transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            style="transform: translateY(-{activeCap * CAP_IMAGE_HEIGHT}px);"
+          >
+            {#each capabilities as cap (cap.id)}
+              <div
+                class="w-full overflow-hidden"
+                style="height: {CAP_IMAGE_HEIGHT}px; background-color: {cap.fallback};"
+              >
+                <img
+                  src={cap.src}
+                  alt=""
+                  loading="lazy"
+                  class="h-full w-full object-cover"
+                  onerror={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0'; }}
+                />
+              </div>
+            {/each}
+          </div>
+        </div>
 
+      </div>
     </div>
   </section>
 
@@ -254,5 +255,31 @@
   .blob-bg {
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%);
     mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%);
+  }
+
+  /* hero — serif-italic emphasis word, matching the copper accent used
+     throughout the rest of the page */
+  .hero-accent {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-style: italic;
+    color: #B8763F;
+  }
+
+  /* philosophy — frosted glass panel over the photo split. The
+     radial-gradient mask feathers the edges so it blends into the photos
+     underneath instead of reading as a hard-edged box. */
+  .philosophy-overlay {
+    position: relative;
+    background: rgba(243, 239, 233, 0.82);
+    backdrop-filter: blur(20px) saturate(115%);
+    -webkit-backdrop-filter: blur(20px) saturate(115%);
+    -webkit-mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, black 55%, transparent 100%);
+    mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, black 55%, transparent 100%);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .relative[style*='transform'] {
+      transition: none;
+    }
   }
 </style>

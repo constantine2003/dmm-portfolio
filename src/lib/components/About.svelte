@@ -4,7 +4,7 @@
   const stats = [
     { index: '01', value: '8',        label: 'Projects\nshipped'          },
     { index: '02', value: '3+',       label: 'Platforms\nbuilt for'        },
-    { index: '03', value: '2025',     label: 'Hardware\nintern, Xeleqt'    },
+    { index: '03', value: '4+',     label: 'Earned\nCertifiates'    },
     { index: '04', value: 'May \'26', label: 'BS CompE\nCIT-U'             },
   ] satisfies { index: string; value: string; label: string }[];
 
@@ -24,7 +24,10 @@
   <div class="about-gradient-block">
 
     <div class="grad-base"></div>
-    <div class="grad-bloom"></div>
+    <div class="grad-cloud grad-cloud-a"></div>
+    <div class="grad-cloud grad-cloud-b"></div>
+    <div class="grad-cloud grad-cloud-c"></div>
+    <div class="grad-vignette"></div>
 
     <svg class="wave wave-top" viewBox="0 0 1440 90" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <path fill="#F3EFE9">
@@ -85,8 +88,8 @@
       <div use:reveal={{ y: 30, duration: 0.9, delay: 0.1 }} class="relative">
 
         <!-- printf( — large opening -->
-        <span class="printf-tag">printf(</span>
-
+        <span class="printf-tag">[INTRO]</span>
+ 
         <!-- the "quoted" body copy -->
         <div class="printf-body">
           <span class="quote-char">"</span>
@@ -110,10 +113,6 @@
           </span>
           <span class="quote-char">"</span>
         </div>
-
-        <!-- closing paren -->
-        <span class="printf-tag printf-close">);</span>
-
       </div>
 
       <div use:reveal={{ y: 20, duration: 0.7, delay: 0.2 }} class="relative">
@@ -125,9 +124,6 @@
             >{tag}</span>
           {/each}
         </div>
-        <a href="mailto:montesclarosdaniel7@gmail.com" class="cta-link">
-          Get in touch ↗
-        </a>
       </div>
     </div>
 
@@ -168,22 +164,90 @@
     background: #0E0B1C;
   }
 
-  .grad-bloom {
+  /* ── horizontal cloudy blend layers ──
+     Instead of scaling/translating a hard-edged radial ellipse (which
+     exposed its boundary at the container edge and caused the rippling
+     "wave" artifact), each layer is a soft linear-gradient, blurred and
+     overscanned, that drifts purely via background-position. There is
+     never a hard edge inside the visible area, so the motion reads as
+     a slow-moving cloud instead of a pulsing blob. */
+  .grad-cloud {
     position: absolute;
-    inset: 0;
-    background: radial-gradient(
-      ellipse 60% 50% at 42% 50%,
-      #3B2E5A 0%,
-      #261C42 35%,
-      transparent 68%
-    );
-    animation: bloom-pulse 8s ease-in-out infinite alternate;
+    inset: -15% -40%;
     pointer-events: none;
     z-index: 1;
+    filter: blur(50px);
+    background-repeat: no-repeat;
+    will-change: background-position;
   }
-  @keyframes bloom-pulse {
-    from { opacity: 0.7; }
-    to   { opacity: 1;   }
+
+  .grad-cloud-a {
+    background-image: linear-gradient(
+      100deg,
+      transparent 0%,
+      transparent 15%,
+      #3B2E5A 38%,
+      #4E3D7A 50%,
+      #2E2350 62%,
+      transparent 85%,
+      transparent 100%
+    );
+    background-size: 160% 100%;
+    animation: cloud-drift-a 22s ease-in-out infinite alternate;
+  }
+
+  .grad-cloud-b {
+    background-image: linear-gradient(
+      80deg,
+      transparent 0%,
+      transparent 20%,
+      #6B4F8F 42%,
+      #3B2E5A 58%,
+      transparent 80%,
+      transparent 100%
+    );
+    background-size: 150% 100%;
+    mix-blend-mode: screen;
+    opacity: 0.35;
+    animation: cloud-drift-b 28s ease-in-out infinite alternate;
+  }
+
+  .grad-cloud-c {
+    background-image: linear-gradient(
+      110deg,
+      transparent 20%,
+      #241B42 45%,
+      transparent 70%
+    );
+    background-size: 180% 100%;
+    opacity: 0.7;
+    animation: cloud-drift-c 34s ease-in-out infinite alternate;
+  }
+
+  @keyframes cloud-drift-a {
+    0%   { background-position: 0% 50%;   }
+    100% { background-position: 100% 50%; }
+  }
+  @keyframes cloud-drift-b {
+    0%   { background-position: 100% 50%; }
+    100% { background-position: 0% 50%;   }
+  }
+  @keyframes cloud-drift-c {
+    0%   { background-position: 20% 50%;  }
+    100% { background-position: 90% 50%;  }
+  }
+
+  /* soft vignette to keep edges dark and add depth on top of the clouds */
+  .grad-vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: radial-gradient(
+      ellipse 75% 80% at 42% 50%,
+      transparent 30%,
+      rgba(6, 4, 16, 0.85) 100%
+    );
   }
 
   .wave {
@@ -226,7 +290,6 @@
 
   .printf-close {
     margin-top: 0.5rem;
-    color: #8A7F74;
   }
 
   .printf-body {
@@ -247,7 +310,7 @@
 
   .body-text {
     font-family: 'Courier New', 'SF Mono', Consolas, monospace;
-    font-size: 0.8125rem;
+    font-size: clamp(1rem, 1.6vw, 1.32rem);
     line-height: 1.85;
     color: #6B6159;
     letter-spacing: -0.005em;
@@ -255,7 +318,7 @@
 
   /* ── tags ── */
   .tag {
-    font-size: 0.5625rem;
+    font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: #8A7F74;
@@ -277,21 +340,6 @@
     from { opacity: 0; transform: translateY(10px) scale(0.92); }
     to   { opacity: 1; transform: translateY(0)     scale(1);   }
   }
-
-  /* ── cta ── */
-  .cta-link {
-    display: inline-flex;
-    align-items: center;
-    font-size: 0.625rem;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: #181512;
-    text-decoration: none;
-    border-bottom: 1px solid #181512;
-    padding-bottom: 2px;
-    transition: opacity 0.15s;
-  }
-  .cta-link:hover { opacity: 0.4; }
 
   /* ── stat cells ── */
   .stat-cell {
@@ -344,7 +392,7 @@
   }
 
   .stat-label {
-    font-size: 0.5625rem;
+    font-size: 1.25rem;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     color: #8A7F74;
@@ -356,5 +404,8 @@
     * { animation: none !important; opacity: 1 !important; transform: none !important; }
     .wave path animate { display: none; }
     .tag-cascade, .stat-pop { opacity: 1 !important; }
+    .grad-cloud-a { background-position: 40% 50%; }
+    .grad-cloud-b { background-position: 60% 50%; }
+    .grad-cloud-c { background-position: 55% 50%; }
   }
 </style>
