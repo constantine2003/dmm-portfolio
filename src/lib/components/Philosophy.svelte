@@ -2,16 +2,18 @@
   import { onMount } from 'svelte';
 
   // ── philosophy ───────────────────────────────────────────────────
-  // 2 placeholder photo slots — swap `src` for the soldering / coding
-  // photos once they're added to the project's static assets.
+  // Photo slots. Each still resolves to a real photo via `src`; the
+  // `fallback` color + schematic texture behind it is what shows while
+  // the photo loads or if it 404s, so there's never a dead gray box.
   const heroPhotos: { id: string; src: string; fallback: string }[] = [
-    { id: 'code',   src: '/coding.png',    fallback: '#A89C8C' },
-    { id: 'solder', src: '/soldering.png', fallback: '#C8C3BB' },
+    { id: 'code',   src: '/coding.png',    fallback: '#EEE7DB' },
+    { id: 'solder', src: '/soldering.png', fallback: '#E0CFBE' },
   ];
 
   let heroSectionEl: HTMLElement | null = $state(null);
   let heroHeadlineEl: HTMLElement | null = $state(null);
   let heroSubEl: HTMLElement | null = $state(null);
+  let heroEyebrowEl: HTMLElement | null = $state(null);
   let heroPhotoEls: HTMLElement[] = [];
 
   function fadeUp(el: HTMLElement, delay: number) {
@@ -20,14 +22,12 @@
         { opacity: '0', transform: 'translateY(10px)' },
         { opacity: '1', transform: 'translateY(0)' },
       ],
-      { duration: 600, delay, easing: 'cubic-bezier(0.16,1,0.3,1)', fill: 'both' }
+      { duration: 700, delay, easing: 'cubic-bezier(0.16,1,0.3,1)', fill: 'both' }
     );
   }
 
-  // reuses the same fadeUp()/IntersectionObserver pattern used elsewhere,
-  // aimed at the hero's own elements.
   onMount(() => {
-    const heroEls = [heroHeadlineEl, heroSubEl, ...heroPhotoEls].filter(
+    const heroEls = [heroEyebrowEl, heroHeadlineEl, heroSubEl, ...heroPhotoEls].filter(
       (el): el is HTMLElement => el !== null
     );
     const observer = new IntersectionObserver(
@@ -43,27 +43,38 @@
   });
 
   // ── what i can do ───────────────────────────────────────────────
-  const capabilities: { id: string; label: string; src: string; fallback: string }[] = [
-    { id: 'hardware',  label: 'Hardware Prototyping',   src: '/thumbnail_healthsense.png', fallback: '#C8C3BB' },
-    { id: 'firmware',  label: 'Embedded Firmware',      src: '/thumbnail_svelteskill.png', fallback: '#B8A99A' },
-    { id: 'frontend',  label: 'Frontend Engineering',   src: '/thumbnail_macroloop.png',   fallback: '#A89C8C' },
-    { id: 'fullstack', label: 'Full-Stack Web Apps',    src: '/thumbnail_archive.png',     fallback: '#D4C4B0' },
-    { id: 'systems',   label: 'Systems Architecture',   src: '/thumbnail_sabong.png',      fallback: '#9C9388' },
+  // `tag` is a short bracketed designator (echoing the "[ what i can do ]"
+  // eyebrow above the list) rather than a sequence number — this list
+  // isn't an ordered process, so numbering it would imply an order that
+  // isn't there.
+  const capabilities: {
+    id: string;
+    tag: string;
+    label: string;
+    src: string;
+    fallback: string;
+  }[] = [
+    { id: 'hardware',  tag: '[HW]',  label: 'Hardware Prototyping',     src: '/thumbnail_healthsense.png', fallback: '#EEE7DB' },
+    { id: 'fullstack', tag: '[FS]',  label: 'Full Stack Development',   src: '/thumbnail_svelteskill.png', fallback: '#E0CFBE' },
+    { id: 'mobile',    tag: '[MB]',  label: 'Mobile Development',       src: '/thumbnail_macroloop.png',   fallback: '#CBA47E' },
+    { id: 'web',       tag: '[WEB]', label: 'Web Applications',         src: '/thumbnail_archive.png',      fallback: '#D8C9B4' },
+    { id: 'ai',        tag: '[AI]',  label: 'AI Automations',           src: '/thumbnail_sabong.png',       fallback: '#DCCFBE' },
   ];
 
-  let activeCap: number = $state(0);
+  let activeCap: number | null = $state(null);
 
   let capListWrap: HTMLElement | null = $state(null);
   let capRowEls: HTMLElement[] = [];
   let imageY: number = $state(0);
   const CAP_IMAGE_HEIGHT = 420;
 
-  function setActiveCap(i: number) {
+  function setActiveCap(i: number | null) {
     activeCap = i;
-    positionCapImage();
+    if (i !== null) positionCapImage();
   }
 
   function positionCapImage() {
+    if (activeCap === null) return;
     const row = capRowEls[activeCap];
     const wrap = capListWrap;
     if (!row || !wrap) return;
@@ -79,7 +90,6 @@
   }
 
   onMount(() => {
-    positionCapImage();
     const handleResize = () => positionCapImage();
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
@@ -88,8 +98,8 @@
 
 <div class="relative bg-[#F3EFE9]">
 
-  <!-- recolored blob-scene background — cream base, copper corner blobs,
-       masked so it fades in from the top instead of cutting in sharply -->
+  <!-- blob-scene background — cream base, copper corner blobs, masked so
+       it fades in from the top instead of cutting in sharply -->
   <svg
     class="blob-bg pointer-events-none absolute inset-0 h-full w-full"
     viewBox="0 0 900 600"
@@ -111,8 +121,17 @@
     </g>
   </svg>
 
-  <!-- translucent cream veil — keeps the blobs from fighting with text contrast -->
   <div class="pointer-events-none absolute inset-0 bg-[#F3EFE9]/72" aria-hidden="true"></div>
+
+  <!-- soft gloss — two faint highlights so the cream field reads as a
+       material surface rather than a flat fill -->
+  <div
+    class="pointer-events-none absolute inset-0"
+    style="background:
+      radial-gradient(60% 40% at 88% 4%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 60%),
+      radial-gradient(50% 35% at 4% 100%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 60%);"
+    aria-hidden="true"
+  ></div>
 
   <!-- ═══════════════════════════ PHILOSOPHY ═══════════════════════════ -->
   <section
@@ -121,7 +140,6 @@
     aria-label="philosophy"
   >
     <div class="relative w-full px-6 sm:px-10 lg:px-16">
-      <!-- the two photos, equal-sized blocks stacked on mobile and side-by-side from sm up -->
       <div class="grid w-full grid-cols-1 overflow-hidden sm:grid-cols-2">
         {#each heroPhotos as photo, i (photo.id)}
           <div
@@ -143,10 +161,17 @@
       <!-- headline lockup — centered over the seam, frosted so it reads
            against either photo, edges feathered rather than boxed -->
       <div class="pointer-events-none absolute inset-0 flex items-center justify-center px-6">
-        <div class="philosophy-overlay pointer-events-auto max-w-xl px-8 py-10 text-center sm:max-w-2xl sm:px-14 sm:py-14">
+        <div class="philosophy-overlay pointer-events-auto max-w-xl px-8 py-10 text-center sm:max-w-2xl sm:px-16 sm:py-14">
+          <p
+            bind:this={heroEyebrowEl}
+            class="font-mono m-0 mb-4 text-[0.72rem] uppercase tracking-[0.16em] text-[#7A4E28]"
+            style="opacity: 0;"
+          >
+          </p>
+
           <h1
             bind:this={heroHeadlineEl}
-            class="font-ui m-0 text-[clamp(2.1rem,5.6vw,3.6rem)] font-semibold leading-[1.12] tracking-tight text-[#1A1A18]"
+            class="font-display m-0 text-[clamp(2.15rem,5.4vw,3.55rem)] font-semibold leading-[1.14] tracking-[-0.01em] text-[#1A1A18]"
             style="opacity: 0;"
           >
             I design the software, then<br />
@@ -155,7 +180,7 @@
 
           <p
             bind:this={heroSubEl}
-            class="font-ui mx-auto mt-6 max-w-md text-[clamp(1.22rem,1.82vw,1.46rem)] leading-[1.6] text-[#3A3A37]"
+            class="font-ui mx-auto mt-[1.35rem] max-w-md text-[clamp(1.08rem,1.5vw,1.2rem)] leading-[1.65] text-[#3A3A37]"
             style="opacity: 0;"
           >
             A systems engineer who ships firmware and frontend from the same bench —
@@ -168,75 +193,117 @@
 
   <!-- ═══════════════════════ WHAT I CAN DO ═══════════════════════ -->
   <section
-    class="relative z-10 w-full pt-[clamp(6rem,14vw,10rem)] pb-[clamp(5.5rem,13vw,9.5rem)]"
+    class="relative z-10 w-full pt-[clamp(2rem,6vw,3rem)] pb-[clamp(5.5rem,13vw,9.5rem)]"
     aria-labelledby="capabilities-heading"
   >
     <div class="flex w-full items-start gap-6 sm:gap-10">
 
-      <!-- label — pinned to the far left edge, own column -->
       <p
         id="capabilities-heading"
-        class="font-ui sticky top-8 m-0 shrink-0 whitespace-nowrap pl-6 text-[0.84rem]
-               uppercase tracking-[0.08em] text-[#6E6D67] sm:pl-10"
+        class="font-mono sticky top-8 m-0 shrink-0 whitespace-nowrap pl-6 text-[0.78rem]
+               tracking-widest text-[#8C8A82] sm:pl-10"
       >
-        [what i can do]
+        [ what i can do ]
       </p>
 
-      <!-- capability list + image — shifted left of center, image sits with a gap from the right edge -->
-      <div class="relative w-full pb-8 sm:pb-12" bind:this={capListWrap}>
+      <div
+        class="relative w-full pb-8 sm:pb-12"
+        role="group"
+        aria-label="Capability list with preview"
+        bind:this={capListWrap}
+        onmouseleave={() => setActiveCap(null)}
+        onfocusout={(e) => {
+          if (!e.currentTarget.contains(e.relatedTarget as Node)) setActiveCap(null);
+        }}
+      >
 
-        <!-- capability list -->
-        <div class="flex flex-col pl-[6vw] pr-6 sm:pr-120 sm:pl-[18vw]">
+        <div class="flex flex-col pl-[6vw] pr-6 sm:pr-108 sm:pl-[18vw]">
           {#each capabilities as cap, i (cap.id)}
             <button
               bind:this={capRowEls[i]}
               type="button"
-              class="group relative w-full py-5 text-left
-                     {i === 0 ? 'pt-0' : ''}
-                     outline-none focus-visible:text-[#1A1A18]"
+              class="group relative flex w-full items-center gap-4 overflow-hidden py-8 text-left
+                     {i === 0 ? 'pt-2' : ''}
+                     outline-none focus-visible:rounded focus-visible:shadow-[inset_0_0_0_2px_#CBA47E]"
               onmouseenter={() => setActiveCap(i)}
               onfocus={() => setActiveCap(i)}
             >
               <span
-                class="font-ui block text-[clamp(2.2rem,6.4vw,3.7rem)] font-bold leading-[1.08]
-                       tracking-tight transition-colors duration-300
-                       {activeCap === i ? 'text-[#1A1A18]' : 'text-[#8C8A82]'}"
+                class="font-mono w-14 shrink-0 text-[0.78rem] tracking-wider text-[#B8763F]"
               >
-                {cap.label}
+                {cap.tag}
+              </span>
+
+              <!-- text roll: two copies of the same label, each absolutely
+                   pinned to fill this exact window (inset:0), so a 100%
+                   transform on either copy always means "exactly one line" —
+                   no ambiguity from a taller stacked wrapper. At rest, copy A
+                   sits in place and copy B waits one line below, both
+                   clipped by the window's own overflow-hidden. On hover, A
+                   slides up and out while B slides up into place. -->
+              <span
+                class="relative block h-[1.08em] min-w-0 flex-1 overflow-hidden text-[clamp(2.3rem,6.6vw,3.9rem)] font-bold leading-[1.08] tracking-tight text-[#1A1A18]"
+                style="contain: paint;"
+              >
+                <span
+                  class="font-ui absolute inset-0 block transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                  style="transform: translateY({activeCap === i ? '-105%' : '0%'});"
+                >{cap.label}</span>
+                <span
+                  class="font-ui absolute inset-0 block transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
+                  style="transform: translateY({activeCap === i ? '0%' : '105%'});"
+                >{cap.label}</span>
               </span>
             </button>
           {/each}
         </div>
 
-        <!-- floating preview — the window itself tracks the vertical
-             position of the hovered row (so it moves to where you hover),
-             while everything inside it is a single fixed-order column of
-             images that slides internally to the right frame — a real
-             filmstrip scroll, never a cross-fade/blur between images. -->
+        <!-- floating preview — a "viewfinder" that tracks the vertical
+             position of the hovered row, framed like an instrument
+             screen (bezel + reticle corners) to echo the hero photos.
+             Hidden until something is hovered; fades/scales in rather
+             than just appearing. Contents are a single fixed-order
+             filmstrip that slides internally — a clean scroll between
+             frames, no per-frame dim/blur pass. -->
         <div
-             class="pointer-events-none absolute right-6 hidden w-105 overflow-hidden
-                 transition-transform duration-500 ease-out sm:block"
+          class="pointer-events-none absolute right-6 hidden w-[24rem] overflow-hidden
+                 shadow-[0_30px_60px_-24px_rgba(24,18,10,0.38),inset_0_0_0_1px_rgba(184,118,63,0.28)]
+                 transition-[transform,opacity] duration-500 ease-out sm:block
+                 {activeCap === null ? 'opacity-0 scale-[0.97]' : 'opacity-100 scale-100'}"
           style="height: {CAP_IMAGE_HEIGHT}px; top: 0; transform: translateY({imageY}px);"
         >
           <div
-            class="transition-transform duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]"
-            style="transform: translateY(-{activeCap * CAP_IMAGE_HEIGHT}px);"
+            class="transition-transform duration-900 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            style="transform: translateY(-{(activeCap ?? 0) * CAP_IMAGE_HEIGHT}px);"
           >
-            {#each capabilities as cap (cap.id)}
+            {#each capabilities as cap, i (cap.id)}
               <div
-                class="w-full overflow-hidden"
+                class="relative w-full overflow-hidden"
                 style="height: {CAP_IMAGE_HEIGHT}px; background-color: {cap.fallback};"
               >
+                <div class="schematic-bg pointer-events-none absolute inset-0"></div>
                 <img
                   src={cap.src}
                   alt=""
                   loading="lazy"
-                  class="h-full w-full object-cover"
+                  class="relative h-full w-full object-cover"
                   onerror={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0'; }}
                 />
               </div>
             {/each}
           </div>
+
+          <span class="corner corner-tl"></span>
+          <span class="corner corner-tr"></span>
+          <span class="corner corner-bl"></span>
+          <span class="corner corner-br"></span>
+
+          {#if activeCap !== null}
+            <span class="font-mono absolute bottom-3.5 left-3.5 z-10 flex items-center gap-2 rounded-sm bg-[#1A1A18]/55 px-2.5 py-1.5 text-[0.7rem] tracking-[0.08em] text-[#FFFDF8] backdrop-blur-sm">
+              <span class="h-1.5 w-1.5 rounded-full bg-[#B8763F]"></span>
+              {capabilities[activeCap].label}
+            </span>
+          {/if}
         </div>
 
       </div>
@@ -246,35 +313,84 @@
 </div>
 
 <style>
+  /* Load these three once, globally, if they aren't already —
+     e.g. in app.html or a root +layout.svelte:
+     Fraunces (display serif), Inter (UI), JetBrains Mono (labels/tags). */
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,380;0,9..144,560;1,9..144,480&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+
   .font-ui {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   }
+  .font-display {
+    font-family: 'Fraunces', Georgia, serif;
+    font-optical-sizing: auto;
+  }
+  .font-mono {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+  }
 
-  /* fades the blob background in from the top and out at the bottom, so it
-     blends into whatever sits above/below instead of cutting with hard edges */
   .blob-bg {
     -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%);
     mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%);
   }
 
-  /* hero — serif-italic emphasis word, matching the copper accent used
-     throughout the rest of the page */
   .hero-accent {
-    font-family: Georgia, 'Times New Roman', serif;
     font-style: italic;
+    font-weight: 480;
     color: #B8763F;
   }
 
-  /* philosophy — frosted glass panel over the photo split. The
-     radial-gradient mask feathers the edges so it blends into the photos
-     underneath instead of reading as a hard-edged box. */
+  /* schematic placeholder texture — a faint circuit-trace grid that
+     stands in for missing photography, on-theme for a hardware/software
+     engineer rather than a generic gray fill */
+  .schematic-bg {
+    opacity: 0.5;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Cpath d='M0 32H64M32 0V64' stroke='rgb(122,78,40)' stroke-width='1' opacity='0.35'/%3E%3Ccircle cx='32' cy='32' r='3' fill='rgb(122,78,40)' opacity='0.5'/%3E%3Ccircle cx='0' cy='32' r='2' fill='rgb(122,78,40)' opacity='0.35'/%3E%3Ccircle cx='64' cy='32' r='2' fill='rgb(122,78,40)' opacity='0.35'/%3E%3Ccircle cx='32' cy='0' r='2' fill='rgb(122,78,40)' opacity='0.35'/%3E%3Ccircle cx='32' cy='64' r='2' fill='rgb(122,78,40)' opacity='0.35'/%3E%3C/svg%3E");
+  }
+
+  /* reticle corners — the page's one signature framing motif, shared by
+     the hero photos and the capability viewfinder */
+  .corner {
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    opacity: 0.45;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+    pointer-events: none;
+  }
+  .corner-tl { top: 12px; left: 12px; border-top: 1.5px solid #B8763F; border-left: 1.5px solid #B8763F; }
+  .corner-tr { top: 12px; right: 12px; border-top: 1.5px solid #B8763F; border-right: 1.5px solid #B8763F; }
+  .corner-bl { bottom: 12px; left: 12px; border-bottom: 1.5px solid #B8763F; border-left: 1.5px solid #B8763F; }
+  .corner-br { bottom: 12px; right: 12px; border-bottom: 1.5px solid #B8763F; border-right: 1.5px solid #B8763F; }
+  /* philosophy — frosted glass panel over the photo split. */
   .philosophy-overlay {
     position: relative;
-    background: rgba(243, 239, 233, 0.82);
-    backdrop-filter: blur(20px) saturate(115%);
-    -webkit-backdrop-filter: blur(20px) saturate(115%);
-    -webkit-mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, black 55%, transparent 100%);
-    mask-image: radial-gradient(ellipse 75% 75% at 50% 50%, black 55%, transparent 100%);
+    border-radius: clamp(20px, 3vw, 30px);
+    background: linear-gradient(
+      155deg,
+      rgba(255, 253, 248, 0.9) 0%,
+      rgba(243, 239, 233, 0.74) 45%,
+      rgba(224, 207, 190, 0.56) 100%
+    );
+    backdrop-filter: blur(28px) saturate(150%);
+    -webkit-backdrop-filter: blur(28px) saturate(150%);
+    box-shadow:
+      inset 0 1px 0 0 rgba(255, 255, 255, 0.7),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.4),
+      inset 0 -1px 0 0 rgba(120, 96, 66, 0.14),
+      0 34px 80px -28px rgba(24, 18, 10, 0.4),
+      0 12px 28px -14px rgba(24, 18, 10, 0.22);
+  }
+
+  .philosophy-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0.045;
+    mix-blend-mode: overlay;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   }
 
   @media (prefers-reduced-motion: reduce) {
