@@ -14,6 +14,8 @@
   let heroHeadlineEl: HTMLElement | null = $state(null);
   let heroSubEl: HTMLElement | null = $state(null);
   let heroEyebrowEl: HTMLElement | null = $state(null);
+  let heroParaEl: HTMLElement | null = $state(null);
+  let heroQuoteEl: HTMLElement | null = $state(null);
   let heroPhotoEls: HTMLElement[] = [];
 
   function fadeUp(el: HTMLElement, delay: number) {
@@ -27,7 +29,7 @@
   }
 
   onMount(() => {
-    const heroEls = [heroEyebrowEl, heroHeadlineEl, heroSubEl, ...heroPhotoEls].filter(
+    const heroEls = [heroEyebrowEl, heroHeadlineEl, heroSubEl, heroParaEl, heroQuoteEl, ...heroPhotoEls].filter(
       (el): el is HTMLElement => el !== null
     );
     const observer = new IntersectionObserver(
@@ -58,7 +60,7 @@
     { id: 'fullstack', tag: '[FS]',  label: 'Full Stack Development',   src: '/thumbnail_svelteskill.png', fallback: '#E0CFBE' },
     { id: 'mobile',    tag: '[MB]',  label: 'Mobile Development',       src: '/thumbnail_macroloop.png',   fallback: '#CBA47E' },
     { id: 'web',       tag: '[WEB]', label: 'Web Applications',         src: '/thumbnail_archive.png',      fallback: '#D8C9B4' },
-    { id: 'ai',        tag: '[AI]',  label: 'AI Automations',           src: '/thumbnail_sabong.png',       fallback: '#DCCFBE' },
+    { id: 'ai',        tag: '[AI]',  label: 'AI Automations',           src: '/aiautomations.png',       fallback: '#DCCFBE' },
   ];
 
   let activeCap: number | null = $state(null);
@@ -94,120 +96,174 @@
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   });
+
+  // ── vanta rings background (capabilities section) ────────────────
+  // Loaded dynamically since these are external <script> tags, not
+  // importable modules. VANTA.RINGS is mounted onto capSectionEl and
+  // destroyed on unmount to avoid leaking WebGL contexts.
+  let capSectionEl: HTMLElement | null = $state(null);
+  let vantaEffect: { destroy: () => void } | null = null;
+
+  function loadScriptOnce(src: string): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) {
+        resolve();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error(`Failed to load script: ${src}`));
+      document.head.appendChild(script);
+    });
+  }
+
+  onMount(() => {
+    let cancelled = false;
+
+    (async () => {
+      try {
+        await loadScriptOnce('https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js');
+        await loadScriptOnce('https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.rings.min.js');
+
+        if (cancelled || !capSectionEl) return;
+
+        const VANTA = (window as unknown as { VANTA?: { RINGS: (opts: Record<string, unknown>) => { destroy: () => void } } }).VANTA;
+        if (!VANTA) return;
+
+        vantaEffect = VANTA.RINGS({
+          el: capSectionEl,
+          mouseControls: true,
+          touchControls: true,
+          gyroControls: false,
+          minHeight: 200.0,
+          minWidth: 200.0,
+          scale: 1.0,
+          scaleMobile: 1.0,
+          backgroundColor: 0xf3efe9,
+          color: 0xb8763f,
+        });
+      } catch (err) {
+        console.error(err);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      vantaEffect?.destroy();
+      vantaEffect = null;
+    };
+  });
 </script>
 
 <div class="relative bg-[#F3EFE9]">
 
-  <!-- blob-scene background — cream base, copper corner blobs, masked so
-       it fades in from the top instead of cutting in sharply -->
-  <svg
-    class="blob-bg pointer-events-none absolute inset-0 h-full w-full"
-    viewBox="0 0 900 600"
-    preserveAspectRatio="xMidYMid slice"
-    aria-hidden="true"
-  >
-    <rect x="0" y="0" width="900" height="600" fill="#F3EFE9"></rect>
-    <g transform="translate(900, 0)">
-      <path d="M0 486.7C-54.3 488.6 -108.6 490.5 -150.4 462.9C-192.2 435.3 -221.6 378.2 -238.6 328.5C-255.7 278.8 -260.3 236.5 -284 206.3C-307.6 176.2 -350.1 158.1 -387.1 125.8C-424 93.4 -455.4 46.7 -486.7 0L0 0Z" fill="#EEE7DB"></path>
-      <path d="M0 365.1C-40.7 366.5 -81.4 367.9 -112.8 347.2C-144.2 326.5 -166.2 283.6 -179 246.3C-191.8 209.1 -195.3 177.4 -213 154.7C-230.7 132.1 -262.6 118.6 -290.3 94.3C-318 70.1 -341.5 35 -365.1 0L0 0Z" fill="#E0CFBE"></path>
-      <path d="M0 243.4C-27.1 244.3 -54.3 245.3 -75.2 231.5C-96.1 217.7 -110.8 189.1 -119.3 164.2C-127.8 139.4 -130.2 118.2 -142 103.2C-153.8 88.1 -175.1 79.1 -193.5 62.9C-212 46.7 -227.7 23.4 -243.4 0L0 0Z" fill="#CBA47E"></path>
-      <path d="M0 121.7C-13.6 122.2 -27.1 122.6 -37.6 115.7C-48.1 108.8 -55.4 94.5 -59.7 82.1C-63.9 69.7 -65.1 59.1 -71 51.6C-76.9 44 -87.5 39.5 -96.8 31.4C-106 23.4 -113.8 11.7 -121.7 0L0 0Z" fill="#B8763F"></path>
-    </g>
-    <g transform="translate(0, 600)">
-      <path d="M0 -486.7C55.5 -476.6 110.9 -466.5 137.5 -423.2C164.1 -380 161.8 -303.6 205.7 -283.2C249.7 -262.7 339.8 -298.1 390.8 -283.9C441.7 -269.7 453.5 -206 462.9 -150.4C472.4 -94.8 479.6 -47.4 486.7 0L0 0Z" fill="#EEE7DB"></path>
-      <path d="M0 -365.1C41.6 -357.5 83.2 -349.8 103.1 -317.4C123.1 -285 121.3 -227.7 154.3 -212.4C187.2 -197 254.9 -223.6 293.1 -212.9C331.3 -202.3 340.1 -154.5 347.2 -112.8C354.3 -71.1 359.7 -35.6 365.1 0L0 0Z" fill="#E0CFBE"></path>
-      <path d="M0 -243.4C27.7 -238.3 55.5 -233.2 68.8 -211.6C82 -190 80.9 -151.8 102.9 -141.6C124.8 -131.3 169.9 -149 195.4 -142C220.9 -134.9 226.7 -103 231.5 -75.2C236.2 -47.4 239.8 -23.7 243.4 0L0 0Z" fill="#CBA47E"></path>
-      <path d="M0 -121.7C13.9 -119.2 27.7 -116.6 34.4 -105.8C41 -95 40.4 -75.9 51.4 -70.8C62.4 -65.7 85 -74.5 97.7 -71C110.4 -67.4 113.4 -51.5 115.7 -37.6C118.1 -23.7 119.9 -11.9 121.7 0L0 0Z" fill="#B8763F"></path>
-    </g>
-  </svg>
-
-  <div class="pointer-events-none absolute inset-0 bg-[#F3EFE9]/72" aria-hidden="true"></div>
-
-  <!-- soft gloss — two faint highlights so the cream field reads as a
-       material surface rather than a flat fill -->
-  <div
-    class="pointer-events-none absolute inset-0"
-    style="background:
-      radial-gradient(60% 40% at 88% 4%, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 60%),
-      radial-gradient(50% 35% at 4% 100%, rgba(255,255,255,0.35) 0%, rgba(255,255,255,0) 60%);"
-    aria-hidden="true"
-  ></div>
-
   <!-- ═══════════════════════════ PHILOSOPHY ═══════════════════════════ -->
   <section
     bind:this={heroSectionEl}
-    class="relative z-10 w-full pt-[clamp(3.5rem,7vw,6rem)] pb-[clamp(6rem,14vw,10rem)]"
+    class="relative z-10 w-full py-[clamp(4.8rem,9.6vw,8.4rem)]"
     aria-label="philosophy"
   >
-    <div class="relative w-full px-6 sm:px-10 lg:px-16">
-      <div class="grid w-full grid-cols-1 overflow-hidden sm:grid-cols-2">
-        {#each heroPhotos as photo, i (photo.id)}
-          <div
-            bind:this={heroPhotoEls[i]}
-            class="relative aspect-square w-full overflow-hidden"
-            style="opacity: 0; background-color: {photo.fallback};"
-          >
-            <img
-              src={photo.src}
-              alt=""
-              loading="lazy"
-              class="h-full w-full object-cover"
-              onerror={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0'; }}
-            />
-          </div>
-        {/each}
-      </div>
+    <div class="mx-auto w-full max-w-[1680px] px-7 sm:px-12 lg:px-20">
+      <div class="grid grid-cols-1 items-center gap-14 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] lg:gap-24">
 
-      <!-- headline lockup — centered over the seam, frosted so it reads
-           against either photo, edges feathered rather than boxed -->
-      <div class="pointer-events-none absolute inset-0 flex items-center justify-center px-6">
-        <div class="philosophy-overlay pointer-events-auto max-w-xl px-8 py-10 text-center sm:max-w-2xl sm:px-16 sm:py-14">
-          <p
-            bind:this={heroEyebrowEl}
-            class="font-mono m-0 mb-4 text-[0.72rem] uppercase tracking-[0.16em] text-[#7A4E28]"
-            style="opacity: 0;"
-          >
-          </p>
+        <!-- text column -->
+        <div class="order-2 lg:order-1">
+          <div class="mb-6 flex items-center gap-3.5">
+            <span class="h-px w-10 bg-[#B8763F]"></span>
+            <p
+              bind:this={heroEyebrowEl}
+              class="font-mono m-0 text-[0.86rem] uppercase tracking-[0.2em] text-[#7A4E28]"
+              style="opacity: 0;"
+            >
+              philosophy
+            </p>
+          </div>
 
           <h1
             bind:this={heroHeadlineEl}
-            class="font-display m-0 text-[clamp(2.15rem,5.4vw,3.55rem)] font-semibold leading-[1.14] tracking-[-0.01em] text-[#1A1A18]"
+            class="font-display m-0 text-[clamp(2.4rem,4.3vw,3.7rem)] font-semibold leading-[1.18] tracking-[-0.01em] text-[#1A1A18]"
             style="opacity: 0;"
           >
-            I design the software, then<br />
-            solder the <em class="hero-accent">hardware</em> underneath.
+            I design the software, then solder the
+            <em class="hero-accent">hardware</em> underneath.
           </h1>
 
           <p
             bind:this={heroSubEl}
-            class="font-ui mx-auto mt-[1.35rem] max-w-md text-[clamp(1.08rem,1.5vw,1.2rem)] leading-[1.65] text-[#3A3A37]"
+            class="font-ui mt-7 max-w-[33rem] text-[clamp(1.22rem,1.56vw,1.34rem)] leading-[1.7] text-[#3A3A37]"
             style="opacity: 0;"
           >
             A systems engineer who ships firmware and frontend from the same bench —
             the boundary between the two is mostly imaginary.
           </p>
+
+          <p
+            bind:this={heroParaEl}
+            class="font-ui mt-5 max-w-[33rem] text-[clamp(1.05rem,1.3vw,1.14rem)] leading-[1.75] text-[#5A5952]"
+            style="opacity: 0;"
+          >
+            Most of what looks like magic in a finished product is just decisions made
+            early, then revisited under real constraints — a battery that drains faster
+            than the spec sheet promised, a signal that only misbehaves at 3am. Software
+            teaches you to abstract. Hardware forces you to reckon.
+          </p>
+
+          <p
+            bind:this={heroQuoteEl}
+            class="font-display mt-8 max-w-[30rem] border-l-2 border-[#B8763F]/40 pl-5 text-[1.08rem] italic leading-[1.6] text-[#3A3A37]"
+            style="opacity: 0;"
+          >
+            the boundary you draw between "frontend" and "firmware" is usually just
+            where you stopped looking.
+          </p>
         </div>
+
+        <!-- photo composition: layered, asymmetric, rounded — not a mirrored grid -->
+        <div class="relative order-1 aspect-[4/5] w-full sm:aspect-[6/5] lg:order-2 lg:aspect-[4/5]">
+          {#each heroPhotos as photo, i (photo.id)}
+            <div
+              bind:this={heroPhotoEls[i]}
+              class={i === 0
+                ? "absolute inset-0 right-[16%] top-0 overflow-hidden rounded-[1.8rem] shadow-[0_48px_96px_-36px_rgba(58,38,18,0.35)]"
+                : "absolute bottom-0 left-0 h-[52%] w-[46%] overflow-hidden rounded-[1.32rem] shadow-[0_34px_67px_-26px_rgba(58,38,18,0.42)] ring-[5px] ring-[#F3EFE9]"}
+              style="opacity: 0; background-color: {photo.fallback};"
+            >
+              <img
+                src={photo.src}
+                alt=""
+                loading="lazy"
+                class="h-full w-full object-cover"
+                onerror={(e) => { (e.currentTarget as HTMLImageElement).style.opacity = '0'; }}
+              />
+            </div>
+          {/each}
+        </div>
+
       </div>
     </div>
   </section>
 
   <!-- ═══════════════════════ WHAT I CAN DO ═══════════════════════ -->
+  <!-- blob-scene background now lives here, scoped to this section only,
+       instead of on the outer wrapper covering the whole page -->
   <section
-    class="relative z-10 w-full pt-[clamp(2rem,6vw,3rem)] pb-[clamp(5.5rem,13vw,9.5rem)]"
+    bind:this={capSectionEl}
+    class="relative z-10 flex w-full min-h-[90vh] flex-col justify-center overflow-hidden py-[clamp(3rem,8vw,6rem)]"
     aria-labelledby="capabilities-heading"
   >
-    <div class="flex w-full items-start gap-6 sm:gap-10">
+    <div class="relative z-10 flex w-full flex-col items-start gap-4 sm:flex-row sm:gap-10">
 
       <p
         id="capabilities-heading"
-        class="font-mono sticky top-8 m-0 shrink-0 whitespace-nowrap pl-6 text-[0.78rem]
-               tracking-widest text-[#8C8A82] sm:pl-10"
+        class="font-mono relative top-0 m-0 shrink-0 whitespace-nowrap pl-6 text-[0.72rem]
+               tracking-widest text-[#8C8A82] sm:sticky sm:top-8 sm:pl-10 sm:text-[0.78rem]"
       >
         [ what i can do ]
       </p>
 
       <div
-        class="relative w-full pb-8 sm:pb-12"
+        class="relative w-full pb-4 sm:pb-12"
         role="group"
         aria-label="Capability list with preview"
         bind:this={capListWrap}
@@ -217,19 +273,20 @@
         }}
       >
 
-        <div class="flex flex-col pl-[6vw] pr-6 sm:pr-108 sm:pl-[18vw]">
+        <div class="flex flex-col pl-6 pr-6 sm:pr-[26rem] sm:pl-24">
           {#each capabilities as cap, i (cap.id)}
             <button
               bind:this={capRowEls[i]}
               type="button"
-              class="group relative flex w-full items-center gap-4 overflow-hidden py-8 text-left
+              class="group relative flex w-full items-center gap-3 overflow-hidden py-5 text-left
+                     sm:gap-4 sm:py-8
                      {i === 0 ? 'pt-2' : ''}
                      outline-none focus-visible:rounded focus-visible:shadow-[inset_0_0_0_2px_#CBA47E]"
               onmouseenter={() => setActiveCap(i)}
               onfocus={() => setActiveCap(i)}
             >
               <span
-                class="font-mono w-14 shrink-0 text-[0.78rem] tracking-wider text-[#B8763F]"
+                class="font-mono w-10 shrink-0 text-[0.68rem] tracking-wider text-[#B8763F] sm:w-14 sm:text-[0.78rem]"
               >
                 {cap.tag}
               </span>
@@ -242,8 +299,8 @@
                    clipped by the window's own overflow-hidden. On hover, A
                    slides up and out while B slides up into place. -->
               <span
-                class="relative block h-[1.08em] min-w-0 flex-1 overflow-hidden text-[clamp(2.3rem,6.6vw,3.9rem)] font-bold leading-[1.08] tracking-tight text-[#1A1A18]"
-                style="contain: paint;"
+                class="relative block h-[1.08em] min-w-0 flex-1 overflow-hidden text-[clamp(1.8rem,5vw,3.1rem)] font-bold leading-[1.08] tracking-tight transition-colors duration-500"
+                style="contain: paint; color: {activeCap === null || activeCap === i ? '#1A1A18' : '#ACA89D'};"
               >
                 <span
                   class="font-ui absolute inset-0 block transition-transform duration-500 ease-[cubic-bezier(0.16,1,0.3,1)]"
@@ -276,7 +333,7 @@
             class="transition-transform duration-900 ease-[cubic-bezier(0.16,1,0.3,1)]"
             style="transform: translateY(-{(activeCap ?? 0) * CAP_IMAGE_HEIGHT}px);"
           >
-            {#each capabilities as cap, i (cap.id)}
+            {#each capabilities as cap (cap.id)}
               <div
                 class="relative w-full overflow-hidden"
                 style="height: {CAP_IMAGE_HEIGHT}px; background-color: {cap.fallback};"
@@ -327,11 +384,6 @@
   }
   .font-mono {
     font-family: 'JetBrains Mono', ui-monospace, monospace;
-  }
-
-  .blob-bg {
-    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%);
-    mask-image: linear-gradient(to bottom, transparent 0%, black 14%, black 86%, transparent 100%);
   }
 
   .hero-accent {

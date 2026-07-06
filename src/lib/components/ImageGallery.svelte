@@ -124,7 +124,7 @@
     <div
       bind:this={gridEl}
       class="grid shrink-0 gap-[clamp(14px,1.8vw,28px)]"
-      style="grid-template-columns: repeat({COLS}, clamp(260px, 25vw, 500px));"
+      style="grid-template-columns: repeat({COLS}, clamp(260px, 25vw, 450px));"
     >
       {#each tiles as tile, i (i)}
         {@const col = i % COLS}
